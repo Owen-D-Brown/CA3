@@ -1,0 +1,4 @@
+- Type must be an enum
+- move_type must be an enum
+- pokedex range 1 - 151
+- 
