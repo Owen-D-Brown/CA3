@@ -1,3 +1,4 @@
+from pydantic import EmailStr
 from sqlalchemy import Boolean, Integer, String, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
@@ -11,7 +12,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    email: Mapped[EmailStr] = mapped_column(EmailStr, unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
@@ -22,3 +23,12 @@ class UsersRepository:
     def get_by_username(self, session: Session, username: str) -> User | None:
         stmt = select(User).where(User.username == username)
         return session.scalar(stmt)
+
+    def get_by_email(self, session: Session, email: str) -> User | None:
+        stmt = select(User).where(User.email == email)
+        return session.scalar(stmt)
+
+    def create_user(self, session: Session, user: User) -> User:
+        session.add(user)
+        session.flush()
+        return user

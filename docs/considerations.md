@@ -1,4 +1,5 @@
 - Type must be an enum
 - move_type must be an enum
 - pokedex range 1 - 151
-- 
+- Revolut gives you a popup if you open the app 
+- while in a call, saying theyre not calling you

@@ -17,5 +17,4 @@ class LoginAttempt(Base):
 class LoginRepository:
     def write_attempt(self, session: Session, attempt: LoginAttempt) -> LoginAttempt:
         session.add(attempt)
-        session.flush()
         return attempt

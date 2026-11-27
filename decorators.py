@@ -1,6 +1,6 @@
 import re
 from typing import Any, Literal
-from pydantic import BaseModel, Field, ValidationError, create_model, ConfigDict
+from pydantic import BaseModel, Field, ValidationError, create_model, ConfigDict, EmailStr
 from flask import session, redirect, url_for, request, abort
 from functools import wraps
 
@@ -20,6 +20,11 @@ class FilterModel(BaseModel):
 class LoginPayloadFilter(FilterModel):
     username: str = Field(min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_]+$")
     password: str = Field(min_length=8, max_length=128)
+
+class SignupPayloadFilter(FilterModel):
+    username: str = Field(min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=8, max_length=128)
+    email: EmailStr = Field(max_length=254)
 
 def request_filter(model: type[FilterModel], source_type: str = "json"):
     if source_type not in ("json", "form", "args"):
