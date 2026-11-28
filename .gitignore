@@ -17,7 +17,8 @@ env/
 .ruff_cache/
 .coverage
 htmlcov/
-
+logs/
+*.db
 dist/
 build/
 *.egg-info/
