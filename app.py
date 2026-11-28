@@ -1,4 +1,5 @@
 import time
+from datetime import UTC, datetime
 
 from flask import Flask, session, request, render_template, redirect, url_for
 from sqlalchemy import create_engine
@@ -17,14 +18,13 @@ logger = AppLogger("pokemon_team_maker")
 # key here
 app.secret_key = "replace-in-prod"
 
-engine = create_engine("sqlite:///database")
+engine = create_engine("sqlite:///database.db")
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 user_dao = UsersRepository()
 login_dao = LoginRepository()
 
 login_rate_limit = RateLimiter(max_attempts=5, window_seconds=60.0)
 signup_rate_limit = RateLimiter(max_attempts=5, window_seconds=300.0)
-controller_logger = AppLogger(__name__)
 
 @app.get("/")
 def landing_page():
@@ -75,29 +75,34 @@ def post_signup(payload: SignupPayloadFilter):
                     session["user_id"] = new_user.id
                     logger.info("signup_success user_id=%s source_ip=%s", new_user.id, client_ip)
                     return redirect(url_for("get_user_home"))
-
+                else:
+                    return render_template("signup.html", error="Username or Email address already in use.")
         except IntegrityError:
-            return
+            return render_template("signup.html", error="An issue has occured. Please try again.")
+    else:
+        return render_template("signup.html", error="You are rate limited please try again later.")
+
 
 
 @app.post("/login")
 @request_filter(LoginPayloadFilter, "form")
 def post_login(payload: LoginPayloadFilter):
-    # might need to cast this cause sqlite3 has no data types
-    now = time.monotonic()
-    login_attempt = LoginAttempt(ip_address=1, username=payload.username, success=False, timestamp=now)
-
-    # check ip and rate limiting
+    rate_limit_now = time.monotonic()
+    attempt_timestamp = datetime.now(UTC).isoformat()
     client_ip = request.remote_addr or "unknown ip"
-    if login_rate_limit.allow(client_ip, now):
+    if login_rate_limit.allow(client_ip, rate_limit_now):
         with SessionLocal() as db_session:
             user = user_dao.get_by_username(db_session, payload.username)
-            #check rate li.miting
-            login_attempt = LoginAttempt(ip_address=client_ip, username=payload.username, success=False, timestamp=1)
-            #verify_password
+            login_attempt = LoginAttempt(
+                ip_address=client_ip,
+                username=payload.username,
+                success=False,
+                timestamp=attempt_timestamp,
+            )
             if user is None or not verify_password(user.password, payload.password):
                 # invalid login
                 login_dao.write_attempt(session = db_session, attempt=login_attempt)
+                db_session.commit()
                 logger.warning("login_failure username=%s source_ip=%s", payload.username, client_ip)
                 return render_template("login.html", error="Invalid username or password"), 401
                 # return
