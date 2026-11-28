@@ -4,15 +4,11 @@ from pydantic import BaseModel, Field, ValidationError, create_model, ConfigDict
 from flask import session, redirect, url_for, request, abort
 from functools import wraps
 
+from app_logging import AppLogger
+
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,32}$")
 
-def login_reqired(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if "user_id" not in session:
-            return "null"
-        return f(*args, **kwargs)
-    return wrapper
+wrapper_logger = AppLogger(__name__)
 
 class FilterModel(BaseModel):
     model_config =  ConfigDict(extra="forbid")
@@ -28,6 +24,7 @@ class SignupPayloadFilter(FilterModel):
 
 def request_filter(model: type[FilterModel], source_type: str = "json"):
     if source_type not in ("json", "form", "args"):
+
         raise ValueError(f"Unsupported source: {source_type}")
 
     def decorator(func):
@@ -42,11 +39,23 @@ def request_filter(model: type[FilterModel], source_type: str = "json"):
                     payload = request.args.to_dict(flat=True)
 
             if payload is None:
+                wrapper_logger.warning("post request body empty. method=%s path=%s source_ip = %s",
+                                       request.method,
+                                       request.path,
+                                       request.remote_addr
+                                       )
                 abort(400)
+
 
             try:
                 kwargs["payload"] = model.model_validate(payload)
             except ValidationError:
+                wrapper_logger.warning("post request format failed. method=%s path=%s source_ip = %s payload = %s",
+                                       request.method,
+                                       request.path,
+                                       request.remote_addr,
+                                       payload.get("username")
+                                       )
                 abort(400)
 
             return func(*args, **kwargs)

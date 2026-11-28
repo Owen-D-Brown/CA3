@@ -3,3 +3,6 @@
 - pokedex range 1 - 151
 - Revolut gives you a popup if you open the app 
 - while in a call, saying theyre not calling you
+- multiple people signed into same account?
+- current rate limiting still allows spam calls to endpoint - not wrapped
+- 

@@ -2,6 +2,7 @@ import time
 from collections import deque
 
 
+
 class RateLimiter:
 
     def __init__(self, max_attempts: int = 5, window_seconds: float = 60.0) -> None:
